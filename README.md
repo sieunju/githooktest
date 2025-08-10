@@ -10,5 +10,7 @@ dddddddddddd
 ./gradlew updateTagsFile
 ```
 
-# test
- 1
+# hooks 안먹힐떄 
+```shell
+chmod +x .git/hooks/post-merge
+```
