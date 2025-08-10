@@ -3,6 +3,8 @@ plugins {
     alias(libs.plugins.kotlin.android)
 }
 
+def timeMinute = (System.currentTimeMillis() / (60 * 1000)).toInteger()
+
 android {
     namespace = "com.hmju.githooktest"
     compileSdk = 35
@@ -11,15 +13,16 @@ android {
         applicationId = "com.hmju.githooktest"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = timeMinute
+        versionName = "0.0.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        setProperty("archivesBaseName", "git_test ${versionCode}_${versionName}")
     }
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            minifyEnabled false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -32,6 +35,33 @@ android {
     }
     kotlinOptions {
         jvmTarget = "11"
+    }
+}
+
+tasks.register("updateTagsFile") {
+    doLast {
+        def versionName = android.defaultConfig.versionName
+        def versionCode = android.defaultConfig.versionCode
+
+        def tagFile = file("${rootProject.projectDir}/tags/default.txt")
+        def content = """name:v${versionName}(${versionCode})"""
+        tagFile.text = content
+    }
+}
+
+afterEvaluate {
+    tasks.matching { task ->
+        task.name.contains('Release')
+    }.configureEach { task ->
+        if (task.name.startsWith('assemble') || task.name.startsWith('bundle')) {
+            task.finalizedBy updateTagsFile
+            task.doFirst {
+                println "🚀 Release 빌드 시작: ${task.name}"
+            }
+            task.doLast {
+                println "✅ Release 빌드 완료: ${task.name}"
+            }
+        }
     }
 }
 
