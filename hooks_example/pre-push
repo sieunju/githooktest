@@ -1,19 +1,18 @@
 #!/bin/sh
-# push 후 태그 자동 생성 (main/master push 시)
+# push 전 태그 자동 생성 (main/master push 시)
 
 remote="$1"
 url="$2"
 
-echo "🔄 Post-push Start"
+echo "🔄 Pre-push Start"
 
-# 어떤 브랜치들이 push되었는지 확인
 while read local_ref local_sha remote_ref remote_sha; do
     # 브랜치명 추출
     branch=$(echo $remote_ref | sed 's/refs\/heads\///')
 
-    echo "📤 Pushed branch: $branch"
+    echo "📤 About to push branch: $branch"
 
-    # main 또는 master 브랜치가 push된 경우에만 태그 생성
+    # main 또는 master 브랜치를 push하려는 경우에만 태그 생성
     if [ "$branch" = "main" ] || [ "$branch" = "master" ]; then
 
         if [ -f "tags/default.txt" ]; then
@@ -40,19 +39,11 @@ while read local_ref local_sha remote_ref remote_sha; do
                     full_message="$tag_message
 
 📅 생성 날짜: $current_date
-🔗 커밋 해시: $commit_hash
-🌿 브랜치: $branch"
+🔗 커밋 해시: $commit_hash"
 
                     echo "✅ Created Tag: $tag_name"
                     git tag -a "$tag_name" -m "$full_message"
-
-                    # Remote Push
-                    echo "🚀 Push Tag to Remote..."
-                    if git push "$remote" "$tag_name"; then
-                        echo "✅ Tag '$tag_name' Remote Push Success"
-                    else
-                        echo "❌ Tag Push Fail. Manual: 'git push $remote $tag_name'"
-                    fi
+                    echo "🏷️  Tag will be pushed with branch"
                 fi
             else
                 echo "❌ Error: Not Found TagName in tags/default.txt"
@@ -66,4 +57,4 @@ while read local_ref local_sha remote_ref remote_sha; do
     fi
 done
 
-echo "🎉 Post-push Completed"
+echo "🎉 Pre-push Completed"
