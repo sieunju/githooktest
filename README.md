@@ -4,3 +4,8 @@
 dddddddddddd
 
 11111ㅇㅇㅇㅇ
+
+# tag version update
+```shell
+./gradlew updateTagsFile
+```
