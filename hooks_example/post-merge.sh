@@ -1,4 +1,3 @@
-#!/bin/sh
 # 머지 후 자동화 작업
 # chmod +x post-merge.sh
 
