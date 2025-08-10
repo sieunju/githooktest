@@ -1,5 +1,6 @@
 #!/bin/sh
 # 머지 후 자동화 작업
+# chmod +x post-merge.sh
 
 current_branch=$(git rev-parse --abbrev-ref HEAD)
 

@@ -1,5 +1,6 @@
 #!/bin/sh
 # 머지 커밋 메시지 자동 생성
+# chmod +x prepare-commit-msg.sh
 
 if [ "$2" = "merge" ]; then
     current_branch=$(git rev-parse --abbrev-ref HEAD)
