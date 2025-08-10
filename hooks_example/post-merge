@@ -74,10 +74,30 @@ case "$deleted_branch" in
         echo "ℹ️  No branch to delete"
         ;;
     *)
-        if git branch -d "$deleted_branch" 2>/dev/null; then
-            echo "🗑️  Delete Branch '$deleted_branch' Success"
-        else
-            echo "⚠️  Delete Branch '$deleted_branch' Fail (Unmerged or Protected)"
+        if [ -n "$deleted_branch" ]; then
+            echo "🗑️  Deleting branch: $deleted_branch"
+
+            # 로컬 브랜치 삭제
+            if git branch -d "$deleted_branch" 2>/dev/null; then
+                echo "✅ Local branch '$deleted_branch' deleted"
+            else
+                echo "⚠️  Local branch '$deleted_branch' delete failed (may not exist or unmerged)"
+            fi
+
+            # 원격 브랜치 삭제 (원격 저장소가 있고 해당 브랜치가 존재하는 경우)
+            if git remote get-url origin >/dev/null 2>&1; then
+                if git ls-remote --exit-code --heads origin "$deleted_branch" >/dev/null 2>&1; then
+                    if git push origin --delete "$deleted_branch" 2>/dev/null; then
+                        echo "✅ Remote branch 'origin/$deleted_branch' deleted"
+                    else
+                        echo "⚠️  Remote branch 'origin/$deleted_branch' delete failed"
+                    fi
+                else
+                    echo "ℹ️  Remote branch 'origin/$deleted_branch' does not exist"
+                fi
+            else
+                echo "ℹ️  No remote repository configured"
+            fi
         fi
         ;;
 esac
