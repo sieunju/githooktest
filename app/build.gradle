@@ -44,7 +44,7 @@ tasks.register("updateTagsFile") {
         def versionCode = android.defaultConfig.versionCode
 
         def tagFile = file("${rootProject.projectDir}/tags/default.txt")
-        def content = """name:v${versionName}(${versionCode})"""
+        def content = """name:v${versionName}(${versionCode})\nmessage:"""
         tagFile.text = content
     }
 }
@@ -56,10 +56,10 @@ afterEvaluate {
         if (task.name.startsWith('assemble') || task.name.startsWith('bundle')) {
             task.finalizedBy updateTagsFile
             task.doFirst {
-                println "🚀 Release 빌드 시작: ${task.name}"
+                println "🚀 Task updateTagsFile"
             }
             task.doLast {
-                println "✅ Release 빌드 완료: ${task.name}"
+                println "✅ Task updateTagsFile"
             }
         }
     }
