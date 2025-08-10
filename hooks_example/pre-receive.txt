@@ -1,0 +1,25 @@
+#!/bin/sh
+# Protected branches 설정
+
+# 보호된 브랜치 목록
+protected_branches="main master develop release/"
+
+while read oldrev newrev refname; do
+    # 브랜치명 추출
+    branch=$(echo $refname | sed 's/refs\/heads\///')
+
+    # 보호된 브랜치인지 확인
+    for protected in $protected_branches; do
+        case "$branch" in
+            $protected*)
+                echo "❌ ERROR: Branch '$branch' is protected!"
+                echo "🛡️  Protected branches: $protected_branches"
+                echo "💡 Use pull request or contact admin"
+                exit 1
+                ;;
+        esac
+    done
+done
+
+echo "✅ Push allowed"
+exit 0
