@@ -1,58 +1,54 @@
 #!/bin/sh
-# 머지 후 브랜치 자동 정리 (Clean merge만)
-# chmod +x .git/hooks/post-merge
-echo "🔄 Post-merge Start"
+# 커밋 후 태그 자동 생성 (main 브랜치 전용)
 
-# 브랜치 정리 (main, develop, release/* 제외하고 모두 삭제)
-echo "🧹 Clear Branch..."
-deleted_branch=$(git reflog | grep "checkout: moving from" | head -1 | awk '{print $6}')
+echo "🔄 Post-commit Start"
 
-# 보호된 브랜치가 아닌 경우 삭제
-case "$deleted_branch" in
-    main|master|develop|release/*)
-        echo "🛡️  Branch Delete Skip (Protected: $deleted_branch)"
-        ;;
-    ""|HEAD)
-        echo "ℹ️  No branch to delete"
-        ;;
-    *)
-        if [ -n "$deleted_branch" ]; then
-            # 충돌 여부 확인 - 마지막 커밋 메시지 검사
-            last_commit_msg=$(git log -1 --pretty=format:"%s")
+if [ -f "tags/default.txt" ]; then
+    echo "🏷️  Detector Tag, Tag Created..."
 
-            # 충돌 관련 키워드가 있는지 확인
-            if echo "$last_commit_msg" | grep -qEi "(conflict|resolve|fix.*merge|merge.*fix|manual.*merge)"; then
-                echo "⚠️  Conflict resolution detected in: '$last_commit_msg'"
-                echo "🚫 Skipping auto-delete for safety: $deleted_branch"
-                echo "💡 Please manually verify and delete: git branch -d $deleted_branch"
+    # tags/default.txt에서 정보 읽기
+    tag_name=$(grep "^name:" tags/default.txt | cut -d':' -f2)
+    tag_message=$(grep "^message:" tags/default.txt | cut -d':' -f2)
+
+    if [ -n "$tag_name" ]; then
+        # 이미 같은 태그가 존재하는지 확인
+        if git tag -l | grep -q "^$tag_name$"; then
+            echo "⚠️  The same tag already exists: '$tag_name'"
+        else
+            # 태그 메시지 구성
+            current_date=$(date '+%Y-%m-%d %H:%M:%S')
+            commit_hash=$(git rev-parse --short HEAD)
+
+            # message가 비어있으면 기본 메시지 사용
+            if [ -z "$tag_message" ]; then
+                tag_message="Auto-generated release"
+            fi
+
+            full_message="$tag_message
+
+📅 생성 날짜: $current_date
+🔗 커밋 해시: $commit_hash"
+
+            echo "✅ Created Tag: $tag_name"
+            git tag -a "$tag_name" -m "$full_message"
+
+            # Remote Push (원격 저장소가 있다면)
+            if git remote get-url origin >/dev/null 2>&1; then
+                echo "🚀 Push Tag to Remote..."
+                if git push origin "$tag_name"; then
+                    echo "✅ Tag '$tag_name' Remote Push Success"
+                else
+                    echo "❌ Tag Push Fail. Manual: 'git push origin $tag_name'"
+                fi
             else
-                echo "✅ Clean merge detected"
-                echo "🗑️  Deleting branch: $deleted_branch"
-
-                # 로컬 브랜치 삭제
-                if git branch -d "$deleted_branch" 2>/dev/null; then
-                    echo "✅ Local branch '$deleted_branch' deleted"
-                else
-                    echo "⚠️  Local branch '$deleted_branch' delete failed (may not exist or unmerged)"
-                fi
-
-                # 원격 브랜치 삭제 (원격 저장소가 있고 해당 브랜치가 존재하는 경우)
-                if git remote get-url origin >/dev/null 2>&1; then
-                    if git ls-remote --exit-code --heads origin "$deleted_branch" >/dev/null 2>&1; then
-                        if git push origin --delete "$deleted_branch" 2>/dev/null; then
-                            echo "✅ Remote branch 'origin/$deleted_branch' deleted"
-                        else
-                            echo "⚠️  Remote branch 'origin/$deleted_branch' delete failed"
-                        fi
-                    else
-                        echo "ℹ️  Remote branch 'origin/$deleted_branch' does not exist"
-                    fi
-                else
-                    echo "ℹ️  No remote repository configured"
-                fi
+                echo "ℹ️  No remote repository configured"
             fi
         fi
-        ;;
-esac
+    else
+        echo "❌ Error: Not Found TagName in tags/default.txt"
+    fi
+else
+    echo "ℹ️  No tags/default.txt file found"
+fi
 
-echo "🎉 Post-merge Completed"
+echo "🎉 Post-commit Completed"
