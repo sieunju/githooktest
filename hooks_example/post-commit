@@ -57,7 +57,7 @@ if [ "$current_branch" = "main" ] || [ "$current_branch" = "master" ]; then
         echo "ℹ️  No tags/default.txt file found"
     fi
 else
-    echo "ℹ️  TagCreate Skip (Not main/master branch)"
+    echo "ℹ️  TagCreate Skip (Not main/master branch"
 fi
 
 echo "🎉 Post-commit Completed"
