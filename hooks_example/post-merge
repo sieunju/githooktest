@@ -1,7 +1,65 @@
 #!/bin/sh
 # 머지 후 브랜치 자동 정리
+# chmod +x .git/hooks/post-merge
+
+current_branch=$(git rev-parse --abbrev-ref HEAD)
 
 echo "🔄 Post-merge Start"
+
+# main 브랜치에 머지된 경우에만 태그 생성
+if [ "$current_branch" = "main" ] || [ "$current_branch" = "master" ]; then
+
+    if [ -f "tags/default.txt" ]; then
+        echo "🏷️  Detector Tag, Tag Created..."
+
+        # tags/default.txt에서 정보 읽기
+        tag_name=$(grep "^name:" tags/default.txt | cut -d':' -f2)
+        tag_message=$(grep "^message:" tags/default.txt | cut -d':' -f2)
+
+        if [ -n "$tag_name" ]; then
+            # 이미 같은 태그가 존재하는지 확인
+            if git tag -l | grep -q "^$tag_name$"; then
+                echo "⚠️  The same tag already exists: '$tag_name'"
+            else
+                # 태그 메시지 구성
+                current_date=$(date '+%Y-%m-%d %H:%M:%S')
+                commit_hash=$(git rev-parse --short HEAD)
+
+                # message가 비어있으면 기본 메시지 사용
+                if [ -z "$tag_message" ]; then
+                    tag_message="Auto-generated release"
+                fi
+
+                full_message="$tag_message
+
+📅 생성 날짜: $current_date
+🔗 커밋 해시: $commit_hash
+🌿 브랜치: $current_branch"
+
+                echo "✅ Created Tag: $tag_name"
+                git tag -a "$tag_name" -m "$full_message"
+
+                # Remote Push (원격 저장소가 있다면)
+                if git remote get-url origin >/dev/null 2>&1; then
+                    echo "🚀 Push Tag to Remote..."
+                    if git push origin "$tag_name"; then
+                        echo "✅ Tag '$tag_name' Remote Push Success"
+                    else
+                        echo "❌ Tag Push Fail. Manual: 'git push origin $tag_name'"
+                    fi
+                else
+                    echo "ℹ️  No remote repository configured"
+                fi
+            fi
+        else
+            echo "❌ Error: Not Found TagName in tags/default.txt"
+        fi
+    else
+        echo "ℹ️  No tags/default.txt file found"
+    fi
+else
+    echo "ℹ️  TagCreate Skip (Not main branch)"
+fi
 
 # 브랜치 정리 (main, develop, release/* 제외하고 모두 삭제)
 echo "🧹 Clear Branch..."
