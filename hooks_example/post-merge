@@ -1,9 +1,6 @@
 #!/bin/sh
 # 머지 후 브랜치 자동 정리 (Clean merge만)
 # chmod +x .git/hooks/post-merge
-
-current_branch=$(git rev-parse --abbrev-ref HEAD)
-
 echo "🔄 Post-merge Start"
 
 # 브랜치 정리 (main, develop, release/* 제외하고 모두 삭제)
