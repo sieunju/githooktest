@@ -33,8 +33,7 @@ if [ "$current_branch" = "main" ] || [ "$current_branch" = "master" ]; then
                 full_message="$tag_message
 
 📅 생성 날짜: $current_date
-🔗 커밋 해시: $commit_hash
-🌿 브랜치: $current_branch"
+🔗 커밋 해시: $commit_hash\
 
                 echo "✅ Created Tag: $tag_name"
                 git tag -a "$tag_name" -m "$full_message"
