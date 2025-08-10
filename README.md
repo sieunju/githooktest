@@ -35,3 +35,5 @@ chmod +x .git/hooks/pre-push
   - hooks_example/post-merge 참고
 - main, master 브렌치에 push 를 할때 자동 태그 생성
   - hooks_example/pre-push 참고
+
+> 이런건 역시..클선생이 최고다.
