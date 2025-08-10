@@ -1,0 +1,27 @@
+#!/bin/sh
+# 머지 후 브랜치 자동 정리
+
+echo "🔄 Post-merge Start"
+
+# 브랜치 정리 (main, develop, release/* 제외하고 모두 삭제)
+echo "🧹 Clear Branch..."
+deleted_branch=$(git reflog | grep "checkout: moving from" | head -1 | awk '{print $6}')
+
+# 보호된 브랜치가 아닌 경우 삭제
+case "$deleted_branch" in
+    main|master|develop|release/*)
+        echo "🛡️  Branch Delete Skip (Protected: $deleted_branch)"
+        ;;
+    ""|HEAD)
+        echo "ℹ️  No branch to delete"
+        ;;
+    *)
+        if git branch -d "$deleted_branch" 2>/dev/null; then
+            echo "🗑️  Delete Branch '$deleted_branch' Success"
+        else
+            echo "⚠️  Delete Branch '$deleted_branch' Fail (Unmerged or Protected)"
+        fi
+        ;;
+esac
+
+echo "🎉 Post-merge Completed"
