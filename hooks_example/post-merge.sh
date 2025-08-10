@@ -67,21 +67,21 @@ else
 fi
 
 # 브랜치 정리
-echo "Clear Branch..."
-deleted_branch=$(git reflog | grep "checkout: moving from" | head -1 | awk '{print $6}')
-
-# 보호된 브랜치 패턴 확인
-case "$deleted_branch" in
-    main|master|develop|release/*)
-        echo "Branch Delete Skip (Protected branch: $deleted_branch)"
-        ;;
-    *)
-        if git branch -d "$deleted_branch" 2>/dev/null; then
-            echo "Delete Branch '$deleted_branch' Success"
-        else
-            echo "Delete Branch '$deleted_branch' Fail (Unmerged or Protected)"
-        fi
-        ;;
-esac
-
-echo "Post-merge Completed"
+#echo "Clear Branch..."
+#deleted_branch=$(git reflog | grep "checkout: moving from" | head -1 | awk '{print $6}')
+#
+## 보호된 브랜치 패턴 확인
+#case "$deleted_branch" in
+#    main|master|develop|release/*)
+#        echo "Branch Delete Skip (Protected branch: $deleted_branch)"
+#        ;;
+#    *)
+#        if git branch -d "$deleted_branch" 2>/dev/null; then
+#            echo "Delete Branch '$deleted_branch' Success"
+#        else
+#            echo "Delete Branch '$deleted_branch' Fail (Unmerged or Protected)"
+#        fi
+#        ;;
+#esac
+#
+#echo "Post-merge Completed"
