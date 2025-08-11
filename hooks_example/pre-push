@@ -1,5 +1,5 @@
 #!/bin/sh
-# push 전 태그 자동 생성 (main/master push 시)
+# push 전 태그 자동 생성 및 푸시 (main/master push 시)
 
 remote="$1"
 url="$2"
@@ -43,7 +43,14 @@ while read local_ref local_sha remote_ref remote_sha; do
 
                     echo "✅ Created Tag: $tag_name"
                     git tag -a "$tag_name" -m "$full_message"
-                    echo "🏷️  Tag will be pushed with branch"
+
+                    # 태그를 원격에 즉시 푸시
+                    echo "🚀 Push Tag to Remote..."
+                    if git push "$remote" "$tag_name" 2>/dev/null; then
+                        echo "✅ Tag '$tag_name' Remote Push Success"
+                    else
+                        echo "❌ Tag Push Failed"
+                    fi
                 fi
             else
                 echo "❌ Error: Not Found TagName in tags/default.txt"
