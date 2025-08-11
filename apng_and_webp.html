@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>APNG & WebP 이미지 로더</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+            max-width: 800px;
+            width: 100%;
+            text-align: center;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            font-weight: 300;
+        }
+
+        .image-section {
+            margin-bottom: 40px;
+        }
+
+        .image-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin-top: 20px;
+        }
+
+        .image-box {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 20px;
+            border: 2px dashed #dee2e6;
+            transition: all 0.3s ease;
+        }
+
+        .image-box:hover {
+            border-color: #667eea;
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.2);
+        }
+
+        .image-box h3 {
+            color: #495057;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+
+        .image-display {
+            width: 100%;
+            height: 200px;
+            border: 1px solid #dee2e6;
+            border-radius: 10px;
+            background: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 15px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .image-display img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            border-radius: 8px;
+        }
+
+        .placeholder {
+            color: #6c757d;
+            font-style: italic;
+        }
+
+        .file-input {
+            margin-bottom: 10px;
+        }
+
+        input[type="file"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            background: #fff;
+            cursor: pointer;
+            transition: border-color 0.3s ease;
+        }
+
+        input[type="file"]:hover {
+            border-color: #667eea;
+        }
+
+        .format-info {
+            font-size: 0.9em;
+            color: #6c757d;
+            margin-top: 10px;
+        }
+
+        .error {
+            color: #dc3545;
+            font-size: 0.9em;
+            margin-top: 5px;
+        }
+
+        .success {
+            color: #28a745;
+            font-size: 0.9em;
+            margin-top: 5px;
+        }
+
+        .instructions {
+            background: #e9ecef;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 30px;
+            text-align: left;
+        }
+
+        .instructions h2 {
+            color: #495057;
+            margin-bottom: 15px;
+            font-size: 1.5em;
+        }
+
+        .instructions ul {
+            color: #6c757d;
+            line-height: 1.6;
+        }
+
+        .instructions li {
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🖼️ APNG & WebP 이미지 로더</h1>
+        
+        <div class="instructions">
+            <h2>사용 방법</h2>
+            <ul>
+                <li>APNG 파일: 애니메이션이 포함된 PNG 이미지 파일</li>
+                <li>WebP 파일: Google에서 개발한 차세대 이미지 포맷</li>
+                <li>각각의 파일 선택 버튼을 클릭해서 이미지를 업로드하세요</li>
+                <li>업로드된 이미지는 즉시 미리보기로 표시됩니다</li>
+            </ul>
+        </div>
+
+        <div class="image-section">
+            <div class="image-container">
+                <div class="image-box">
+                    <h3>🎬 APNG 이미지</h3>
+                    <div class="image-display" id="apng-display">
+                        <span class="placeholder">APNG 파일을 선택해주세요</span>
+                    </div>
+                    <div class="file-input">
+                        <input type="file" id="apng-input" accept=".png,.apng" />
+                    </div>
+                    <div class="format-info">
+                        지원 형식: .png, .apng (최대 50MB)
+                    </div>
+                    <div id="apng-status"></div>
+                </div>
+
+                <div class="image-box">
+                    <h3>🚀 WebP 이미지</h3>
+                    <div class="image-display" id="webp-display">
+                        <span class="placeholder">WebP 파일을 선택해주세요</span>
+                    </div>
+                    <div class="file-input">
+                        <input type="file" id="webp-input" accept=".webp" />
+                    </div>
+                    <div class="format-info">
+                        지원 형식: .webp (최대 20MB)
+                    </div>
+                    <div id="webp-status"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function setupImageLoader(inputId, displayId, statusId, allowedExtensions) {
+            const input = document.getElementById(inputId);
+            const display = document.getElementById(displayId);
+            const status = document.getElementById(statusId);
+
+            input.addEventListener('change', function(event) {
+                const file = event.target.files[0];
+                status.innerHTML = '';
+
+                if (!file) {
+                    display.innerHTML = '<span class="placeholder">파일을 선택해주세요</span>';
+                    return;
+                }
+
+                // 파일 확장자 검사
+                const fileName = file.name.toLowerCase();
+                const isValidExtension = allowedExtensions.some(ext => fileName.endsWith(ext));
+                
+                if (!isValidExtension) {
+                    status.innerHTML = `<div class="error">⚠️ 지원하지 않는 파일 형식입니다. (${allowedExtensions.join(', ')}만 지원)</div>`;
+                    display.innerHTML = '<span class="placeholder">올바른 파일을 선택해주세요</span>';
+                    return;
+                }
+
+                // 파일 크기 검사 (APNG는 50MB, WebP는 20MB 제한)
+                const maxSize = allowedExtensions.includes('.apng') ? 50 * 1024 * 1024 : 20 * 1024 * 1024;
+                const maxSizeText = allowedExtensions.includes('.apng') ? '50MB' : '20MB';
+                
+                if (file.size > maxSize) {
+                    status.innerHTML = `<div class="error">⚠️ 파일 크기가 너무 큽니다. (${maxSizeText} 이하만 지원)</div>`;
+                    return;
+                }
+
+                const reader = new FileReader();
+                
+                reader.onload = function(e) {
+                    const img = document.createElement('img');
+                    img.src = e.target.result;
+                    img.alt = file.name;
+                    
+                    img.onload = function() {
+                        display.innerHTML = '';
+                        display.appendChild(img);
+                        status.innerHTML = `<div class="success">✅ ${file.name} 로드 완료 (${(file.size / 1024).toFixed(1)}KB)</div>`;
+                    };
+                    
+                    img.onerror = function() {
+                        status.innerHTML = '<div class="error">⚠️ 이미지를 로드할 수 없습니다.</div>';
+                        display.innerHTML = '<span class="placeholder">이미지 로드 실패</span>';
+                    };
+                };
+
+                reader.onerror = function() {
+                    status.innerHTML = '<div class="error">⚠️ 파일을 읽을 수 없습니다.</div>';
+                };
+
+                reader.readAsDataURL(file);
+            });
+        }
+
+        // 이미지 로더 초기화
+        setupImageLoader('apng-input', 'apng-display', 'apng-status', ['.png', '.apng']);
+        setupImageLoader('webp-input', 'webp-display', 'webp-status', ['.webp']);
+
+        // 드래그 앤 드롭 기능
+        function setupDragAndDrop(displayId, inputId) {
+            const display = document.getElementById(displayId);
+            const input = document.getElementById(inputId);
+
+            display.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                display.style.borderColor = '#667eea';
+                display.style.backgroundColor = '#f8f9ff';
+            });
+
+            display.addEventListener('dragleave', function(e) {
+                e.preventDefault();
+                display.style.borderColor = '#dee2e6';
+                display.style.backgroundColor = '#fff';
+            });
+
+            display.addEventListener('drop', function(e) {
+                e.preventDefault();
+                display.style.borderColor = '#dee2e6';
+                display.style.backgroundColor = '#fff';
+                
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    input.files = files;
+                    input.dispatchEvent(new Event('change', { bubbles: true }));
+                }
+            });
+        }
+
+        // 드래그 앤 드롭 초기화
+        setupDragAndDrop('apng-display', 'apng-input');
+        setupDragAndDrop('webp-display', 'webp-input');
+    </script>
+</body>
+</html>
