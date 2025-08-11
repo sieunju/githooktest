@@ -9,7 +9,7 @@ deleted_branch=$(git reflog | grep "checkout: moving from" | head -1 | awk '{pri
 
 # 보호된 브랜치가 아닌 경우 삭제
 case "$deleted_branch" in
-    main|master|develop|release/*)
+    main|master|develop|task/*)
         echo "🛡️  Branch Delete Skip (Protected: $deleted_branch)"
         ;;
     ""|HEAD)
