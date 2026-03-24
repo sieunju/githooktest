@@ -5,302 +5,415 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>APNG & WebP 이미지 로더</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
             padding: 20px;
         }
-
         .container {
-            background: rgba(255, 255, 255, 0.95);
+            background: rgba(255,255,255,0.95);
             border-radius: 20px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-            padding: 40px;
-            max-width: 800px;
-            width: 100%;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            padding: 40px; max-width: 800px; width: 100%;
             text-align: center;
         }
+        h1 { color: #333; margin-bottom: 30px; font-size: 2.2em; font-weight: 300; }
 
-        h1 {
-            color: #333;
-            margin-bottom: 30px;
-            font-size: 2.5em;
-            font-weight: 300;
+        /* ── 권한 섹션 ── */
+        .permission-section {
+            background: #f0f4ff;
+            border-radius: 14px; padding: 24px;
+            margin-bottom: 32px;
+            border: 1.5px solid #c7d2fe;
+        }
+        .permission-section h2 { color: #3730a3; font-size: 1.15em; margin-bottom: 16px; }
+
+        .perm-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+        @media (max-width: 500px) { .perm-grid { grid-template-columns: 1fr; } }
+
+        .perm-card {
+            background: #fff;
+            border-radius: 12px; padding: 18px;
+            border: 1.5px solid #e0e7ff;
+            display: flex; flex-direction: column; gap: 10px;
+        }
+        .perm-card h3 { font-size: 1em; color: #312e81; }
+
+        .btn {
+            display: inline-flex; align-items: center; justify-content: center;
+            gap: 7px; padding: 10px 18px;
+            border: none; border-radius: 9px;
+            font-size: 0.95em; font-weight: 600; cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .btn-camera  { background: #6366f1; color: #fff; }
+        .btn-camera:hover  { background: #4f46e5; transform: translateY(-2px); }
+        .btn-record  { background: #ef4444; color: #fff; }
+        .btn-record:hover  { background: #dc2626; transform: translateY(-2px); }
+        .btn-stop    { background: #6b7280; color: #fff; }
+        .btn-stop:hover    { background: #4b5563; transform: translateY(-2px); }
+        .btn:disabled { background: #d1d5db; color: #9ca3af; cursor: not-allowed; transform: none; }
+
+        .perm-status { font-size: 0.85em; min-height: 18px; }
+        .granted { color: #16a34a; font-weight: 600; }
+        .denied  { color: #dc2626; font-weight: 600; }
+        .info    { color: #6b7280; }
+
+        /* ── 카메라 프리뷰 ── */
+        #camera-wrap {
+            display: none; margin-top: 12px;
+            border-radius: 10px; overflow: hidden;
+            background: #000; position: relative;
+        }
+        #camera-video {
+            width: 100%; max-height: 220px;
+            object-fit: cover; display: block;
+        }
+        .camera-controls {
+            display: flex; gap: 8px; justify-content: center;
+            padding: 10px; background: #1e1b4b;
         }
 
-        .image-section {
-            margin-bottom: 40px;
+        /* ── 녹화 상태 표시 ── */
+        .rec-dot {
+            display: inline-block; width: 10px; height: 10px;
+            background: #ef4444; border-radius: 50%;
+            animation: blink 1s infinite;
         }
+        @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
 
+        /* ── 녹화 결과 ── */
+        #recorded-wrap { display: none; margin-top: 12px; }
+        #recorded-video {
+            width: 100%; max-height: 220px;
+            border-radius: 10px; background: #000;
+        }
+        .download-btn {
+            display: inline-block; margin-top: 8px;
+            padding: 8px 20px; background: #10b981; color: #fff;
+            border-radius: 8px; font-size: 0.9em; font-weight: 600;
+            text-decoration: none; cursor: pointer; border: none;
+        }
+        .download-btn:hover { background: #059669; }
+
+        /* ── 이미지 업로더 ── */
+        .image-section { margin-bottom: 10px; }
         .image-container {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 30px;
-            margin-top: 20px;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 24px; margin-top: 20px;
         }
-
         .image-box {
-            background: #f8f9fa;
-            border-radius: 15px;
-            padding: 20px;
-            border: 2px dashed #dee2e6;
+            background: #f8f9fa; border-radius: 15px;
+            padding: 20px; border: 2px dashed #dee2e6;
             transition: all 0.3s ease;
         }
-
-        .image-box:hover {
-            border-color: #667eea;
-            transform: translateY(-5px);
-            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.2);
-        }
-
-        .image-box h3 {
-            color: #495057;
-            margin-bottom: 15px;
-            font-size: 1.3em;
-        }
-
+        .image-box:hover { border-color: #667eea; transform: translateY(-4px); box-shadow: 0 10px 30px rgba(102,126,234,0.2); }
+        .image-box h3 { color: #495057; margin-bottom: 14px; font-size: 1.2em; }
         .image-display {
-            width: 100%;
-            height: 200px;
-            border: 1px solid #dee2e6;
-            border-radius: 10px;
-            background: #fff;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 15px;
-            overflow: hidden;
-            position: relative;
+            width: 100%; height: 180px;
+            border: 1px solid #dee2e6; border-radius: 10px;
+            background: #fff; display: flex;
+            align-items: center; justify-content: center;
+            margin-bottom: 14px; overflow: hidden;
         }
-
-        .image-display img {
-            max-width: 100%;
-            max-height: 100%;
-            object-fit: contain;
-            border-radius: 8px;
-        }
-
-        .placeholder {
-            color: #6c757d;
-            font-style: italic;
-        }
-
-        .file-input {
-            margin-bottom: 10px;
-        }
-
+        .image-display img { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 8px; }
+        .placeholder { color: #6c757d; font-style: italic; font-size: 0.9em; }
         input[type="file"] {
-            width: 100%;
-            padding: 12px;
-            border: 2px solid #dee2e6;
-            border-radius: 8px;
-            background: #fff;
-            cursor: pointer;
+            width: 100%; padding: 10px;
+            border: 2px solid #dee2e6; border-radius: 8px;
+            background: #fff; cursor: pointer;
             transition: border-color 0.3s ease;
         }
-
-        input[type="file"]:hover {
-            border-color: #667eea;
-        }
-
-        .format-info {
-            font-size: 0.9em;
-            color: #6c757d;
-            margin-top: 10px;
-        }
-
-        .error {
-            color: #dc3545;
-            font-size: 0.9em;
-            margin-top: 5px;
-        }
-
-        .success {
-            color: #28a745;
-            font-size: 0.9em;
-            margin-top: 5px;
-        }
-
-        .instructions {
-            background: #e9ecef;
-            border-radius: 10px;
-            padding: 20px;
-            margin-bottom: 30px;
-            text-align: left;
-        }
-
-        .instructions h2 {
-            color: #495057;
-            margin-bottom: 15px;
-            font-size: 1.5em;
-        }
-
-        .instructions ul {
-            color: #6c757d;
-            line-height: 1.6;
-        }
-
-        .instructions li {
-            margin-bottom: 5px;
-        }
+        input[type="file"]:hover { border-color: #667eea; }
+        .format-info { font-size: 0.85em; color: #6c757d; margin-top: 8px; }
+        .error   { color: #dc3545; font-size: 0.85em; margin-top: 5px; }
+        .success { color: #28a745; font-size: 0.85em; margin-top: 5px; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>🖼️ APNG & WebP 이미지 로더</h1>
-        
-        <div class="instructions">
-            <h2>사용 방법</h2>
-            <ul>
-                <li>APNG 파일: 애니메이션이 포함된 PNG 이미지 파일</li>
-                <li>WebP 파일: Google에서 개발한 차세대 이미지 포맷</li>
-                <li>각각의 파일 선택 버튼을 클릭해서 이미지를 업로드하세요</li>
-                <li>업로드된 이미지는 즉시 미리보기로 표시됩니다</li>
-            </ul>
-        </div>
+<div class="container">
+    <h1>🖼️ APNG & WebP 이미지 로더</h1>
 
-        <div class="image-section">
-            <div class="image-container">
-                <div class="image-box">
-                    <h3>🎬 APNG 이미지</h3>
-                    <div class="image-display" id="apng-display">
-                        <span class="placeholder">APNG 파일을 선택해주세요</span>
-                    </div>
-                    <div class="file-input">
-                        <input type="file" id="apng-input" accept=".png,.apng" />
-                    </div>
-                    <div class="format-info">
-                        지원 형식: .png, .apng (최대 50MB)
-                    </div>
-                    <div id="apng-status"></div>
-                </div>
+    <!-- ── 권한 요청 섹션 ── -->
+    <div class="permission-section">
+        <h2>📋 권한 요청</h2>
+        <div class="perm-grid">
 
-                <div class="image-box">
-                    <h3>🚀 WebP 이미지</h3>
-                    <div class="image-display" id="webp-display">
-                        <span class="placeholder">WebP 파일을 선택해주세요</span>
+            <!-- 카메라 -->
+            <div class="perm-card">
+                <h3>📷 카메라 (CAMERA)</h3>
+                <button class="btn btn-camera" id="btn-camera" onclick="requestCamera()">카메라 권한 요청</button>
+                <div class="perm-status info" id="camera-status">권한 요청 전</div>
+                <div id="camera-wrap">
+                    <video id="camera-video" autoplay playsinline muted></video>
+                    <div class="camera-controls">
+                        <button class="btn btn-stop" onclick="stopCamera()">⏹ 카메라 끄기</button>
                     </div>
-                    <div class="file-input">
-                        <input type="file" id="webp-input" accept=".webp" />
-                    </div>
-                    <div class="format-info">
-                        지원 형식: .webp (최대 20MB)
-                    </div>
-                    <div id="webp-status"></div>
                 </div>
             </div>
+
+            <!-- 비디오 녹화 -->
+            <div class="perm-card">
+                <h3>🎥 비디오 녹화 (카메라)</h3>
+                <button class="btn btn-record" id="btn-record" onclick="startRecording()" disabled>● 녹화 시작</button>
+                <button class="btn btn-stop"   id="btn-stop-rec" onclick="stopRecording()" disabled>⏹ 녹화 중지</button>
+                <div class="perm-status info" id="record-status">카메라 권한 필요</div>
+                <div id="recorded-wrap">
+                    <video id="recorded-video" controls></video>
+                    <br>
+                    <button class="download-btn" id="btn-download" onclick="downloadVideo()">⬇ 영상 저장</button>
+                </div>
+            </div>
+
         </div>
     </div>
 
-    <script>
-        function setupImageLoader(inputId, displayId, statusId, allowedExtensions) {
-            const input = document.getElementById(inputId);
-            const display = document.getElementById(displayId);
-            const status = document.getElementById(statusId);
+    <!-- ── 이미지 업로더 ── -->
+    <div class="image-section">
+        <div class="image-container">
+            <div class="image-box">
+                <h3>🎬 APNG 이미지</h3>
+                <div class="image-display" id="apng-display">
+                    <span class="placeholder">APNG 파일을 선택해주세요</span>
+                </div>
+                <input type="file" id="apng-input" accept=".png,.apng" />
+                <div class="format-info">지원 형식: .png, .apng (최대 50MB)</div>
+                <div id="apng-status"></div>
+            </div>
+            <div class="image-box">
+                <h3>🚀 WebP 이미지</h3>
+                <div class="image-display" id="webp-display">
+                    <span class="placeholder">WebP 파일을 선택해주세요</span>
+                </div>
+                <input type="file" id="webp-input" accept=".webp" />
+                <div class="format-info">지원 형식: .webp (최대 20MB)</div>
+                <div id="webp-status"></div>
+            </div>
+        </div>
+    </div>
+</div>
 
-            input.addEventListener('change', function(event) {
-                const file = event.target.files[0];
-                status.innerHTML = '';
+<script>
+    /* ══════════════════════════════
+       카메라 & 녹화
+    ══════════════════════════════ */
+    let cameraStream = null;
+    let mediaRecorder = null;
+    let recordedChunks = [];
+    let recordedBlob = null;
 
-                if (!file) {
-                    display.innerHTML = '<span class="placeholder">파일을 선택해주세요</span>';
-                    return;
-                }
+    // 페이지 로드 시 권한 상태 먼저 확인
+    async function checkCameraPermission() {
+        const status = document.getElementById('camera-status');
+        const btn    = document.getElementById('btn-camera');
 
-                // 파일 확장자 검사
-                const fileName = file.name.toLowerCase();
-                const isValidExtension = allowedExtensions.some(ext => fileName.endsWith(ext));
-                
-                if (!isValidExtension) {
-                    status.innerHTML = `<div class="error">⚠️ 지원하지 않는 파일 형식입니다. (${allowedExtensions.join(', ')}만 지원)</div>`;
-                    display.innerHTML = '<span class="placeholder">올바른 파일을 선택해주세요</span>';
-                    return;
-                }
-
-                // 파일 크기 검사 (APNG는 50MB, WebP는 20MB 제한)
-                const maxSize = allowedExtensions.includes('.apng') ? 50 * 1024 * 1024 : 20 * 1024 * 1024;
-                const maxSizeText = allowedExtensions.includes('.apng') ? '50MB' : '20MB';
-                
-                if (file.size > maxSize) {
-                    status.innerHTML = `<div class="error">⚠️ 파일 크기가 너무 큽니다. (${maxSizeText} 이하만 지원)</div>`;
-                    return;
-                }
-
-                const reader = new FileReader();
-                
-                reader.onload = function(e) {
-                    const img = document.createElement('img');
-                    img.src = e.target.result;
-                    img.alt = file.name;
-                    
-                    img.onload = function() {
-                        display.innerHTML = '';
-                        display.appendChild(img);
-                        status.innerHTML = `<div class="success">✅ ${file.name} 로드 완료 (${(file.size / 1024).toFixed(1)}KB)</div>`;
-                    };
-                    
-                    img.onerror = function() {
-                        status.innerHTML = '<div class="error">⚠️ 이미지를 로드할 수 없습니다.</div>';
-                        display.innerHTML = '<span class="placeholder">이미지 로드 실패</span>';
-                    };
-                };
-
-                reader.onerror = function() {
-                    status.innerHTML = '<div class="error">⚠️ 파일을 읽을 수 없습니다.</div>';
-                };
-
-                reader.readAsDataURL(file);
-            });
+        if (!navigator.permissions) {
+            // permissions API 미지원 브라우저는 버튼 방식으로 fallback
+            status.textContent = '버튼을 눌러 권한을 요청하세요.';
+            return;
         }
 
-        // 이미지 로더 초기화
-        setupImageLoader('apng-input', 'apng-display', 'apng-status', ['.png', '.apng']);
-        setupImageLoader('webp-input', 'webp-display', 'webp-status', ['.webp']);
+        try {
+            const result = await navigator.permissions.query({ name: 'camera' });
 
-        // 드래그 앤 드롭 기능
-        function setupDragAndDrop(displayId, inputId) {
-            const display = document.getElementById(displayId);
-            const input = document.getElementById(inputId);
+            applyPermissionState(result.state);
 
-            display.addEventListener('dragover', function(e) {
-                e.preventDefault();
-                display.style.borderColor = '#667eea';
-                display.style.backgroundColor = '#f8f9ff';
-            });
+            // 권한 상태가 바뀌면 자동 반영 (예: 설정에서 변경 시)
+            result.onchange = () => applyPermissionState(result.state);
 
-            display.addEventListener('dragleave', function(e) {
-                e.preventDefault();
-                display.style.borderColor = '#dee2e6';
-                display.style.backgroundColor = '#fff';
-            });
-
-            display.addEventListener('drop', function(e) {
-                e.preventDefault();
-                display.style.borderColor = '#dee2e6';
-                display.style.backgroundColor = '#fff';
-                
-                const files = e.dataTransfer.files;
-                if (files.length > 0) {
-                    input.files = files;
-                    input.dispatchEvent(new Event('change', { bubbles: true }));
-                }
-            });
+        } catch (e) {
+            // query 자체를 지원 안 하는 경우 (일부 브라우저)
+            status.textContent = '버튼을 눌러 권한을 요청하세요.';
         }
+    }
 
-        // 드래그 앤 드롭 초기화
-        setupDragAndDrop('apng-display', 'apng-input');
-        setupDragAndDrop('webp-display', 'webp-input');
-    </script>
+    function applyPermissionState(state) {
+        const status = document.getElementById('camera-status');
+        const btn    = document.getElementById('btn-camera');
+
+        if (state === 'granted') {
+            status.className = 'perm-status granted';
+            status.textContent = '✅ 이미 권한이 허용되어 있습니다. 카메라를 시작합니다.';
+            btn.disabled = true;
+            startCamera(); // 바로 켜기
+        } else if (state === 'prompt') {
+            status.className = 'perm-status info';
+            status.textContent = '버튼을 눌러 카메라 권한을 요청하세요.';
+            btn.disabled = false;
+        } else if (state === 'denied') {
+            status.className = 'perm-status denied';
+            status.textContent = '❌ 권한이 차단되어 있습니다. 브라우저 설정 → 사이트 권한에서 카메라를 허용해주세요.';
+            btn.disabled = true;
+        }
+    }
+
+    // 실제 카메라 스트림 시작 (권한 요청 포함)
+    async function startCamera() {
+        const status = document.getElementById('camera-status');
+        const wrap   = document.getElementById('camera-wrap');
+        const video  = document.getElementById('camera-video');
+
+        try {
+            cameraStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+            video.srcObject = cameraStream;
+            wrap.style.display = 'block';
+            status.className = 'perm-status granted';
+            status.textContent = '✅ 카메라 권한 허용됨';
+            document.getElementById('btn-camera').disabled = true;
+            document.getElementById('btn-record').disabled = false;
+            document.getElementById('record-status').textContent = '녹화 준비 완료';
+        } catch (err) {
+            status.className = 'perm-status denied';
+            if (err.name === 'NotAllowedError') {
+                status.textContent = '❌ 권한이 거부되었습니다. 브라우저 설정에서 허용해주세요.';
+            } else if (err.name === 'NotFoundError') {
+                status.textContent = '❌ 카메라를 찾을 수 없습니다.';
+            } else {
+                status.textContent = `❌ 오류: ${err.message}`;
+            }
+        }
+    }
+
+    // 버튼 클릭 시 → 상태 확인 없이 바로 요청 (prompt 상태이므로)
+    async function requestCamera() {
+        await startCamera();
+    }
+
+    function stopCamera() {
+        if (cameraStream) {
+            cameraStream.getTracks().forEach(t => t.stop());
+            cameraStream = null;
+        }
+        document.getElementById('camera-wrap').style.display = 'none';
+        document.getElementById('camera-status').className = 'perm-status info';
+        document.getElementById('camera-status').textContent = '카메라가 꺼졌습니다.';
+        document.getElementById('btn-camera').disabled = false;
+        document.getElementById('btn-record').disabled = true;
+        document.getElementById('record-status').textContent = '카메라 권한 필요';
+    }
+
+    function startRecording() {
+        if (!cameraStream) return;
+
+        recordedChunks = [];
+        recordedBlob = null;
+        document.getElementById('recorded-wrap').style.display = 'none';
+
+        const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp9')
+            ? 'video/webm;codecs=vp9'
+            : 'video/webm';
+
+        mediaRecorder = new MediaRecorder(cameraStream, { mimeType });
+
+        mediaRecorder.ondataavailable = e => {
+            if (e.data.size > 0) recordedChunks.push(e.data);
+        };
+
+        mediaRecorder.onstop = () => {
+            recordedBlob = new Blob(recordedChunks, { type: mimeType });
+            const url = URL.createObjectURL(recordedBlob);
+            const rv = document.getElementById('recorded-video');
+            rv.src = url;
+            document.getElementById('recorded-wrap').style.display = 'block';
+            document.getElementById('record-status').className = 'perm-status granted';
+            document.getElementById('record-status').textContent = '✅ 녹화 완료';
+        };
+
+        mediaRecorder.start(100);
+
+        document.getElementById('btn-record').disabled = true;
+        document.getElementById('btn-stop-rec').disabled = false;
+        document.getElementById('record-status').innerHTML =
+            '<span class="rec-dot"></span> 녹화 중...';
+    }
+
+    function stopRecording() {
+        if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+            mediaRecorder.stop();
+        }
+        document.getElementById('btn-record').disabled = false;
+        document.getElementById('btn-stop-rec').disabled = true;
+    }
+
+    function downloadVideo() {
+        if (!recordedBlob) return;
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(recordedBlob);
+        a.download = `recorded_${Date.now()}.webm`;
+        a.click();
+    }
+
+    /* ══════════════════════════════
+       이미지 업로더
+    ══════════════════════════════ */
+    function setupImageLoader(inputId, displayId, statusId, exts) {
+        const input   = document.getElementById(inputId);
+        const display = document.getElementById(displayId);
+        const status  = document.getElementById(statusId);
+
+        input.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            status.innerHTML = '';
+            if (!file) { display.innerHTML = '<span class="placeholder">파일을 선택해주세요</span>'; return; }
+
+            const valid = exts.some(ext => file.name.toLowerCase().endsWith(ext));
+            if (!valid) {
+                status.innerHTML = `<div class="error">⚠️ 지원하지 않는 형식입니다. (${exts.join(', ')})</div>`;
+                display.innerHTML = '<span class="placeholder">올바른 파일을 선택해주세요</span>';
+                return;
+            }
+
+            const maxSize = exts.includes('.apng') ? 50 * 1024 * 1024 : 20 * 1024 * 1024;
+            if (file.size > maxSize) {
+                status.innerHTML = `<div class="error">⚠️ 파일이 너무 큽니다.</div>`;
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = ev => {
+                const img = document.createElement('img');
+                img.src = ev.target.result;
+                img.alt = file.name;
+                img.onload = () => {
+                    display.innerHTML = '';
+                    display.appendChild(img);
+                    status.innerHTML = `<div class="success">✅ ${file.name} (${(file.size/1024).toFixed(1)}KB)</div>`;
+                };
+                img.onerror = () => {
+                    status.innerHTML = '<div class="error">⚠️ 이미지를 로드할 수 없습니다.</div>';
+                    display.innerHTML = '<span class="placeholder">이미지 로드 실패</span>';
+                };
+            };
+            reader.onerror = () => { status.innerHTML = '<div class="error">⚠️ 파일을 읽을 수 없습니다.</div>'; };
+            reader.readAsDataURL(file);
+        });
+
+        // 드래그 앤 드롭
+        display.addEventListener('dragover', e => { e.preventDefault(); display.style.borderColor = '#667eea'; });
+        display.addEventListener('dragleave', e => { e.preventDefault(); display.style.borderColor = '#dee2e6'; });
+        display.addEventListener('drop', e => {
+            e.preventDefault(); display.style.borderColor = '#dee2e6';
+            if (e.dataTransfer.files.length) {
+                input.files = e.dataTransfer.files;
+                input.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+        });
+    }
+
+    setupImageLoader('apng-input', 'apng-display', 'apng-status', ['.png', '.apng']);
+    setupImageLoader('webp-input', 'webp-display', 'webp-status', ['.webp']);
+
+    // 페이지 로드 시 권한 상태 확인
+    checkCameraPermission();
+</script>
 </body>
 </html>
